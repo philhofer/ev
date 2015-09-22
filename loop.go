@@ -1,10 +1,11 @@
 package ev
 
 import (
+	"io"
 	"syscall"
 )
 
-// This file depends upon the following 
+// This file depends upon the following
 // OS-specific routines:
 //
 // sockfd(fd int) *evfd // arm duplex fd
@@ -25,6 +26,7 @@ type evfd struct {
 	fd    int    // system fd
 	rsema uint32 // read semaphore
 	wsema uint32 // write semaphore
+	atEOF bool
 }
 
 //go:noescape
@@ -72,6 +74,9 @@ func (f *evfd) Write(p []byte) (int, error) {
 				return nn, err
 			}
 		}
+		if n == 0 {
+			return nn, io.ErrClosedPipe
+		}
 		nn += n
 	}
 	return nn, nil
@@ -80,6 +85,8 @@ func (f *evfd) Write(p []byte) (int, error) {
 func (f *evfd) Read(p []byte) (int, error) {
 	if f.magic == 0 {
 		return 0, ErrClosed
+	} else if f.atEOF {
+		return 0, io.EOF
 	}
 
 try:
@@ -95,6 +102,10 @@ try:
 		default:
 			return 0, err
 		}
+	}
+	if n == 0 {
+		f.atEOF = true
+		return 0, io.EOF
 	}
 	return n, nil
 }

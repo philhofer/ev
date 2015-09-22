@@ -1,33 +1,33 @@
 package ev
 
-func NewPipe() (*Pipe, error) {
+func NewPipe() (*PipeReader, *PipeWriter, error) {
 	rd, wd, err := pipe()
 	if err != 0 {
-		return nil, err
+		return nil, nil, err
 	}
-	return &Pipe{
-		w: wfd(wd),
-		r: rfd(rd),
-	}, nil
+	return &PipeReader{rfd(rd)}, &PipeWriter{wfd(wd)}, nil
 }
 
-type Pipe struct {
-	w *evfd
+type PipeReader struct {
 	r *evfd
 }
 
-func (p *Pipe) Write(b []byte) (int, error) {
+type PipeWriter struct {
+	w *evfd
+}
+
+func (p *PipeWriter) Write(b []byte) (int, error) {
 	return p.w.Write(b)
 }
 
-func (p *Pipe) Read(b []byte) (int, error) {
+func (p *PipeReader) Read(b []byte) (int, error) {
 	return p.r.Read(b)
 }
 
-func (p *Pipe) Close() error {
-	we, re := p.w.Close(), p.r.Close()
-	if we == nil {
-		we = re
-	}
-	return we
+func (p *PipeReader) Close() error {
+	return p.r.Close()
+}
+
+func (p *PipeWriter) Close() error {
+	return p.w.Close()
 }

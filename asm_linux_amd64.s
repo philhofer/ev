@@ -1,5 +1,13 @@
 #include "textflag.h"
 
+TEXT ·__pipe2(SB),NOSPLIT,$0-24
+	MOVQ $293, AX
+	MOVQ dst+0(FP), DI
+	MOVQ flags+8(FP), SI
+	SYSCALL
+	MOVQ AX, ret+16(FP)
+	RET
+	
 TEXT ·epollcreate1(SB),NOSPLIT,$0-16
 	MOVQ $291, AX
 	MOVQ flags+0(FP), DI
@@ -22,7 +30,6 @@ TEXT ·epollwait(SB),NOSPLIT,$0-40
 
 
 TEXT ·epollctl(SB),NOSPLIT,$0-40
-	CALL runtime·entersyscall(SB)
 	MOVQ $233, AX
 	MOVQ fd+0(FP), DI
 	MOVQ op+8(FP), SI
@@ -30,7 +37,6 @@ TEXT ·epollctl(SB),NOSPLIT,$0-40
 	MOVQ ev+24(FP), R10
 	SYSCALL
 	MOVQ AX, ret+32(FP)
-	CALL runtime·exitsyscall(SB)
 	RET
 
 
